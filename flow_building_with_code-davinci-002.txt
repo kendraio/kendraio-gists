@@ -1,0 +1,794 @@
+A database of transactions between organisations was made with this SQL:
+
+<code>
+CREATE TABLE organisations ( id SERIAL PRIMARY KEY , name VARCHAR ( 255 ) NOT NULL );
+CREATE TABLE transactions ( id SERIAL PRIMARY KEY , amount INT NOT NULL , from_organisation_id INT NOT NULL REFERENCES organisations ( id ), to_organisation_id INT NOT NULL REFERENCES organisations ( id ) );
+
+INSERT INTO organisations ( name ) VALUES ( 'Acme' ), ( 'Widgets Inc' ), ( 'Foo Bar' );
+INSERT INTO transactions ( amount , from_organisation_id , to_organisation_id ) VALUES ( 100 , 1 , 2 ), ( 200 , 2 , 3 ), ( 300 , 3 , 1 );
+
+SELECT * FROM organisations ;
+SELECT * FROM transactions ;
+</code>
+We can view the transactions between organisations like this:
+<code>
+SELECT o . name AS from_organisation , t . amount , o2 . name AS to_organisation FROM transactions t INNER JOIN organisations o ON t . from_organisation_id = o . id INNER JOIN organisations o2 ON t . to_organisation_id = o2 . id ;
+</code>
+
+Hasura has been setup for the above database and a low-code flow has been made to query the organisations list like so:
+<code>
+{
+  "title": "Workflow",
+  "blocks": [
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query GetOrganisations {\n  organisations {\n    name\n\t\tid\n  }\n}\n    ",
+      "variables": {},
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "debug",
+      "open": 6,
+      "showData": true,
+      "showContext": false,
+      "showState": false,
+      "blockComment": ""
+    }
+  ],
+  "adapterName": "UNKNOWN"
+}
+</code>
+
+Here is graphql to list transactions:
+<code>
+query MyQuery {
+  transactions_with_organisations {
+    amount
+    from_organisation
+    to_organisation
+  }
+}
+</code>
+
+Here is a flow that uses the above query and shows the results in a table:
+<code>
+{
+  "title": "Workflow",
+  "blocks": [
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query MyQuery {\n  transactions_with_organisations {\n    amount\n    from_organisation\n    to_organisation\n  }\n}\n    ",
+      "variables": {},
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "mapping",
+      "mapping": "data.data.transactions_with_organisations",
+      "blockComment": ""
+    },
+    {
+      "type": "debug",
+      "open": 6,
+      "showData": true,
+      "showContext": false,
+      "showState": false,
+      "blockComment": ""
+    },
+    {
+      "type": "grid",
+      "gridOptions": {},
+      "passThrough": false,
+      "firstRowHeaders": false
+    }
+  ],
+  "adapterName": "UNKNOWN"
+}
+</code>
+
+Here is a table of orgs:
+<code>
+{
+  "title": "Workflow",
+  "blocks": [
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query GetOrganisations {\n  organisations {\n    name\n\t\tid\n  }\n}\n    ",
+      "variables": {},
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "mapping",
+      "mapping": "data.data.organisations",
+      "blockComment": ""
+    },
+    {
+      "type": "debug",
+      "open": 6,
+      "showData": true,
+      "showContext": false,
+      "showState": false,
+      "blockComment": ""
+    },
+    {
+      "type": "grid",
+      "gridOptions": {},
+      "passThrough": false,
+      "firstRowHeaders": false      
+    }
+  ],
+  "adapterName": "UNKNOWN"
+}
+</code>
+
+Here is a flow to add a track to DSP-1:
+<code>
+{
+  "title": "Add Track (DSP1)",
+  "blocks": [
+    {
+      "type": "init"
+    },
+    {
+      "type": "form",
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {
+              "display_artist": {
+                "type": "string",
+                "title": "Artist"
+              },
+              "display_title": {
+                "type": "string",
+                "title": "Title"
+              },
+              "public": {
+                "type": "boolean",
+                "title": "public"
+              }
+            }
+          }
+        }
+      },
+      "uiSchema": {}
+    },
+    {
+      "type": "graphql",
+      "endpoint": "https://star-grackle-36.hasura.app/v1/graphql",
+      "query": "mutation MyMutation($input: tracks_insert_input!) {\n  insert_tracks_one(object: $input) {\n    __typename\n  }\n}\n",
+      "variables": {
+        "input": "data.input"
+      },
+      "headers": {
+        "Authorization": "join(' ', [`Bearer`, context.saved.access_token])"
+      },
+      "allowFirst": false,
+      "allowEmpty": true
+    },
+    {
+      "type": "debug",
+      "open": 3,
+      "showContext": false
+    }
+  ],
+  "id": "addTrack",
+  "adapterName": "dsp1"
+}
+</code>
+
+A flow to upload a track to DSP1:
+<code>
+[
+  {
+    "type": "init"
+  },
+  {
+    "type": "variable-get",
+    "name": "dsp1-auth"
+  },
+  {
+    "type": "context-save",
+    "contextKey": "saved"
+  },
+  {
+    "type": "graphql",
+    "endpoint": "https://star-grackle-36.hasura.app/v1/graphql",
+    "query": "mutation MyMutation($trackId: String!) {\n uploadTrack(trackId: $trackId) {\n signedRequest\n url\n }\n}\n",
+    "variables": {
+      "trackId": "context.queryParams.id"
+    },
+    "headers": {
+      "Authorization": "join(' ', [`Bearer`, context.saved.access_token])"
+    },
+    "allowFirst": false,
+    "allowEmpty": false
+  },
+  {
+    "type": "debug",
+    "open": 1,
+    "showContext": false
+  },
+  {
+    "type": "context-save",
+    "contextKey": "signedRequest"
+  },
+  {
+    "type": "debug",
+    "open": 0,
+    "showContext": true
+  },
+  {
+    "type": "file-input",
+    "label": "Import",
+    "accept": [
+      "mp3"
+    ],
+    "binary": true
+  },
+  {
+    "type": "debug",
+    "open": 1,
+    "showContext": true
+  },
+  {
+    "type": "http",
+    "method": "bput",
+    "endpoint": {
+      "protocol": "https:",
+      "valueGetter": "context.signedRequest.data.uploadTrack.signedRequest"
+    },
+    "headers": {
+      "Content-Type": "`audio/mpeg`"
+    },
+    "payload": "data.content",
+    "onError": {
+      "blocks": [
+        {
+          "type": "debug"
+        }
+      ]
+    }
+  },
+  {
+    "type": "debug",
+    "open": 1,
+    "showContext": false
+  }
+]
+</code>
+
+Here is GraphQL adding an organisation called The Company, with ID unspecified, then returning all orgs:
+<code>
+mutation MyMutation {
+  insert_organisations_one(object: {name: "The Company"}) {
+    id
+    name
+  }
+}
+
+query GetOrganisations {
+  organisations {
+    name
+    id
+  }
+}
+</code>
+
+Here is a flow to list orgs, add an organisation, and list them again:
+<code>
+{
+  "title": "Workflow",
+  "blocks": [
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query GetOrganisations {\n  organisations {\n    name\n\t\tid\n  }\n}\n    ",
+      "variables": {},
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "mapping",
+      "mapping": "data.data.organisations",
+      "blockComment": ""
+    },
+    {
+      "type": "debug",
+      "open": 6,
+      "showData": true,
+      "showContext": false,
+      "showState": false,
+      "blockComment": ""
+    },
+    {
+      "type": "grid",
+      "gridOptions": {},
+      "passThrough": false,
+      "firstRowHeaders": false
+    },
+    {
+      "type": "form",
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "Name"
+              }
+            }
+          }
+        }
+      },
+      "uiSchema": {}
+    },
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "mutation MyMutation($input: organisations_insert_input!) {\n  insert_organisations_one(object: $input) {\n    id\n    name\n  }\n}\n",
+      "variables": {
+        "input": "data.input"
+      },
+      "headers": {},
+      "allowFirst": false,
+      "allowEmpty": false
+    },
+    {
+      "type": "debug",
+      "open": 3,
+      "showContext": false
+    },
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query GetOrganisations {\n  organisations {\n    name\n\t\tid\n  }\n}\n    ",
+      "variables": {},
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "mapping",
+      "mapping": "data.data.organisations",
+      "blockComment": ""
+    },
+    {
+      "type": "debug",
+      "open": 6,
+      "showData": true,
+      "showContext": false,
+      "showState": false,
+      "blockComment": ""
+    },
+    {
+      "type": "grid",
+      "gridOptions": {},
+      "passThrough": false,
+      "firstRowHeaders": false
+    }
+  ],
+  "adapterName": "UNKNOWN"
+}
+</code>
+
+Here is a flow using a form to select an organsation ID, using a list of company names. The Form block has saved context injected, so in this case the mapping listing the companies is injected. It uses oneOf and is based on this data:
+
+Company name, company ID
+Dave's Fish, 16
+Chip More, 30
+
+<code>
+{
+  "title": "Form example showing selecting an item using it's ID",
+  "blocks": [
+    {
+      "type": "init"
+    },
+    {
+      "type": "mapping",
+      "mapping": "`{\n          \"oneOf\": [\n            {\n              \"title\": \"Dave's Fish\",\n              \"type\": \"integer\",\n              \"enum\": [\n                16\n              ]\n            },\n            {\n              \"title\": \"Chip More\",\n              \"type\": \"integer\",\n              \"enum\": [\n                30\n              ]\n            }\n          ]\n        }`",
+      "blockComment": ""
+    },
+    {
+      "type": "context-save",
+      "key": "orgs",
+      "blockComment": "Save orgs"
+    },
+    {
+      "type": "form",
+      "hasSubmit": false,
+      "label": "Submit",
+      "emitOnInit": true,
+      "skipInit": false,
+      "confirm": false,
+      "jsonSchema": {
+        "definitions": {
+          "context": {
+            "orgs": {
+              "oneOf": [
+                {
+                  "title": "Dave's Fish",
+                  "type": "integer",
+                  "enum": [
+                    16
+                  ]
+                },
+                {
+                  "title": "Chip More",
+                  "type": "integer",
+                  "enum": [
+                    30
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "$ref": "#/definitions/context/orgs"
+          }
+        }
+      },
+      "uiSchema": {},
+      "blockComment": "Allows selecting an org from the list, returning an object containing an org_id"
+    },
+    {
+      "type": "debug",
+      "open": 8,
+      "showData": true,
+      "showContext": false,
+      "showState": false,
+      "blockComment": ""
+    }
+  ],
+  "id": "enum_selector_with_title",
+  "adapterName": "form-examples"
+}
+</code>
+A dynamic Local-loop org selector
+<code>
+{
+  "title": "Form example showing selecting an item using it's ID",
+  "blocks": [
+    {
+      "type": "init"
+    },
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query GetOrganisations {\n  organisations {\n    name\n\t\tid\n  }\n}\n    ",
+      "variables": {},
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "mapping",
+      "blockComment": "Get's just the organisations list",
+      "mapping": "data.data.organisations"
+    },
+    {
+      "type": "mapping",
+      "blockComment": "Transforms the organisations list into JSON Schema oneOf array fragment",
+      "mapping": "{oneOf:data[*].{ title: name, type: 'integer', enum: [id] }}"
+    },
+    {
+      "type": "context-save",
+      "key": "orgs",
+      "blockComment": "Save orgs"
+    },
+    {
+      "type": "form",
+      "hasSubmit": true,
+      "label": "Submit",
+      "emitOnInit": true,
+      "skipInit": false,
+      "confirm": false,
+      "jsonSchema": {
+        "definitions": {
+          "context": {
+            "orgs": {
+              "oneOf": [
+                {
+                  "title": "Acme",
+                  "type": "integer",
+                  "enum": [
+                    1
+                  ]
+                },
+                {
+                  "title": "Widgets Inc",
+                  "type": "integer",
+                  "enum": [
+                    2
+                  ]
+                },
+                {
+                  "title": "Foo Bar",
+                  "type": "integer",
+                  "enum": [
+                    3
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "type": "object",
+        "properties": {
+          "org_id": {
+            "$ref": "#/definitions/context/orgs"
+          }
+        }
+      },
+      "uiSchema": {},
+      "blockComment": "Allows selecting an org from the list, returning an object containing an org_id"
+    },
+    {
+      "type": "debug",
+      "open": 8,
+      "showData": true,
+      "showContext": false,
+      "showState": false,
+      "blockComment": ""
+    }
+  ],
+  "id": "enum_selector_with_title",
+  "adapterName": "form-examples"
+}
+</code>
+
+Here is a flow to list transactions, and add a transaction from one org to another, and lists them again after editing.
+<code>
+{
+  "title": "Add transaction",
+  "blocks": [
+    {
+      "type": "init"
+    },
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query GetOrganisations {\n  organisations {\n    name\n\t\tid\n  }\n}\n    ",
+      "variables": {},
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "mapping",
+      "mapping": "data.data.organisations",
+      "blockComment": "Get just the organisations list"
+    },
+    {
+      "type": "mapping",
+      "mapping": "{oneOf:data[*].{ title: name, type: 'integer', enum: [id] }}",
+      "blockComment": "Transforms the organisations list into JSON Schema oneOf array fragment"
+    },
+    {
+      "type": "context-save",
+      "key": "orgs",
+      "blockComment": "Save orgs"
+    },
+    {
+      "type": "form",
+      "hasSubmit": true,
+      "label": "Submit",
+      "emitOnInit": true,
+      "skipInit": false,
+      "confirm": false,
+      "jsonSchema": {
+        "definitions": {
+          "context": {
+            "orgs": {
+              "oneOf": [
+                {
+                  "title": "Acme",
+                  "type": "integer",
+                  "enum": [
+                    1
+                  ]
+                },
+                {
+                  "title": "Widgets Inc",
+                  "type": "integer",
+                  "enum": [
+                    2
+                  ]
+                },
+                {
+                  "title": "Foo Bar",
+                  "type": "integer",
+                  "enum": [
+                    3
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "type": "object",
+        "properties": {
+          "from_organisation_id": {
+            "$ref": "#/definitions/context/orgs"
+          },
+          "to_organisation_id": {
+            "$ref": "#/definitions/context/orgs"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
+          }
+        }
+      },
+      "uiSchema": {},
+      "blockComment": "Allows selecting an org from the list, returning an object containing an org_id"
+    },
+    {
+      "type": "mapping",
+      "mapping": "{\"from_organisation_id\":data.from_organisation_id, \"to_organisation_id\":data.to_organisation_id,amount:data.amount}",
+      "blockComment": "Ensure we only have the required keys"
+    },
+    {
+      "type": "debug",
+      "open": 8,
+      "showData": true,
+      "showContext": false,
+      "showState": false,
+      "blockComment": ""
+    },
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "mutation MyMutation($input: transactions_insert_input!) {\n  insert_transactions_one(object: $input) {\n    id\n    amount\n    from_organisation_id\n    to_organisation_id\n  }\n}\n",
+      "variables": {
+        "input": "data"
+      },
+      "headers": {},
+      "allowFirst": false,
+      "allowEmpty": false
+    },
+    {
+      "type": "debug",
+      "open": 3,
+      "showContext": false
+    },
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query MyQuery {\n  transactions_with_organisations {\n    amount\n    from_organisation\n    to_organisation\n  }\n}\n    ",
+      "variables": {},
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "mapping",
+      "mapping": "data.data.transactions_with_organisations",
+      "blockComment": ""
+    },
+    {
+      "type": "debug",
+      "open": 6,
+      "showData": true,
+      "showContext": false,
+      "showState": false,
+      "blockComment": ""
+    },
+    {
+      "type": "grid",
+      "gridOptions": {},
+      "passThrough": false,
+      "firstRowHeaders": false
+    }
+  ],
+  "id": "add_transaction",
+  "adapterName": "local-loop"
+}
+</code>
+
+A flow to select an org and list transactions sent from or to that specific org using the name of the org and transactions_with_organisations.
+<code>
+{
+  "title": "Filter transactions by organisation",
+  "blocks": [
+    {
+      "type": "init"
+    },
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query GetOrganisations {\n  organisations {\n    name\n }\n}\n    ",
+      "variables": {},
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "mapping",
+      "mapping": "data.data.organisations",
+      "blockComment": "Get just the organisations list"
+    },
+    {
+      "type": "mapping",
+      "mapping": "{enum:data[*].name, type: 'string'}",
+      "blockComment": "Transforms the organisations list into JSON Schema enum array fragment"
+    },
+    {
+      "type": "context-save",
+      "key": "orgs",
+      "blockComment": "Save orgs"
+    },
+    {
+      "type": "form",
+      "hasSubmit": false,
+      "label": "Submit",
+      "emitOnInit": false,
+      "skipInit": false,
+      "confirm": false,
+      "jsonSchema": {
+        "definitions": {
+          "context": {
+            "orgs": {
+              "enum": [
+                "Acme",
+                "Widgets Inc",
+                "Foo Bar"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "type": "object",
+        "properties": {
+          "name": {
+            "$ref": "#/definitions/context/orgs"
+          }
+        }
+      },
+      "uiSchema": {},
+      "blockComment": "Allows selecting an org from the list, returning an object containing an org_id"
+    },
+    {
+      "type": "graphql",
+      "endpoint": "https://localloop.hasura.app/v1/graphql",
+      "query": "query MyQuery($name: String!) {\n  transactions_with_organisations(where: {_or: [{from_organisation: {_eq: $name}}, {to_organisation: {_eq: $name}}]}) {\n    amount\n    from_organisation\n    to_organisation\n  }\n}\n    ",
+      "variables": {
+        "name": "data.name"
+      },
+      "headers": {},
+      "allowFirst": true,
+      "allowEmpty": true
+    },
+    {
+      "type": "mapping",
+      "mapping": "data.data.transactions_with_organisations",
+      "blockComment": ""
+    },
+    {
+      "type": "grid",
+      "gridOptions": {},
+      "passThrough": false,
+      "firstRowHeaders": false
+    }
+  ],
+  "id": "filterTransactionsByOrg",
+  "adapterName": "local-loop"
+}
+</code>
