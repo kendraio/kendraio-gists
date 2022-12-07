@@ -1,0 +1,16 @@
+<html>
+  <head></head>
+  <body>
+    <h2>Response</h2>
+    <ul>
+      <li><strong>URL : </strong> {{ url }}</li>
+      <li><strong>Status : </strong> {{ status }} {{ statusText }}</li>
+    </ul>
+    <h2>Request</h2>
+    <ul>
+      <li *ngFor="let header of headers| keyvalue">
+        <strong> {{ header.key }}</strong> : {{ header.value }}
+      </li>
+    </ul>
+  </body>
+</html>
