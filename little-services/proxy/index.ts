@@ -2,6 +2,7 @@
 const net = require("net");
 const server = net.createServer();
 
+
 // yeek! that was the auto-suggestion
 server.on("connection", (clientToProxySocket: { once: (arg0: string, arg1: (data: any) => void) => void; write: (arg0: string) => void; pipe: (arg0: any) => void; on: (arg0: string, arg1: (err: any) => void) => void; }) => {
   console.log("Client connected to proxy");
@@ -65,11 +66,6 @@ server.on("close", () => {
   console.log("Client disconnected");
 });
 
-/*
-server.on("end", () => {
-  console.log("End.");
-});
-*/
 
 server.listen(
   {
@@ -77,6 +73,6 @@ server.listen(
     port: 3003,
   },
   () => {
-    console.log("Server listening on 0.0.0.0:3002");
+    console.log("Server listening on 0.0.0.0:3003");
   }
 );
