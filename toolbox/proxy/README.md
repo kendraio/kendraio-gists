@@ -10,6 +10,10 @@ Hardcoded (towards end of script) to run on port 3003
 
 ### Compile
 
+from proxy/ dir :
+
+npm install
+
 tsc
 
 or
@@ -33,3 +37,15 @@ ts-node index.ts
 or
 
 npx ts-node index.ts
+
+#### Run as Service
+
+sudo apt install pm2
+
+pm2 start dist/index.js -n toolbox-proxy
+
+### Test
+
+[to check]
+
+curl https://www.kendra.io/ --proxy http://localhost:3003
