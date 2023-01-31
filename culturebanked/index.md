@@ -1,6 +1,11 @@
 # CultureBanked/Kendraio
 
-_first impressions_
+_first impressions, 2023-01-31_
+
+## UI
+
+- [Mockup Slide](https://docs.google.com/presentation/d/1Kfd87Zx0MFwDFSoW8Z209TBrgyM5WJWjHQfYXwcTOMU/edit#slide=id.g195879d82f4_0_1)
+- [App Version](https://app.kendra.io/culturebanked/culturebanked)
 
 ## Infrastructure Questions
 
@@ -22,10 +27,6 @@ Post Office Protocol (POP), Internet Message Access Protocol (IMAP) - preferred 
 
 ### Potential flow
 
-[Mockup Slide](https://docs.google.com/presentation/d/1Kfd87Zx0MFwDFSoW8Z209TBrgyM5WJWjHQfYXwcTOMU/edit#slide=id.g195879d82f4_0_1)
-
-[App Version](https://app.kendra.io/culturebanked/culturebanked)
-
 Maybe use a single form for both
 
 on submit, run through each content host with a Switch block?
@@ -34,7 +35,14 @@ on submit, run through each content host with a Switch block?
 
 Falls out of the app UI
 
-## App Notes
+## Gists
+
+**Flow creation :**
+
+- [Flow template HTML mockup] - approx rendering
+- [card.json] - card block as JSON
+- [strip-control-chars-sh] - remove newlines etc.
+- [card-spaced.txt] - Card block as placed in app
 
 ### Misc
 
