@@ -1,0 +1,1 @@
+tr -d '\000-\011\013\014\016-\037\n\r' < card-spaced.txt > card.json
