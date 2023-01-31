@@ -39,10 +39,10 @@ Falls out of the app UI
 
 **Flow creation :**
 
-- [Flow template HTML mockup] - approx rendering
-- [card.json] - card block as JSON
-- [strip-control-chars-sh] - remove newlines etc.
-- [card-spaced.txt] - Card block as placed in app
+- [Flow template HTML mockup](https://github.com/kendraio/kendraio-gists/blob/main/culturebanked/gists/html/flow-template.html) - approx rendering
+- [card.json](https://github.com/kendraio/kendraio-gists/blob/main/culturebanked/gists/card.json) - card block as JSON
+- [strip-control-chars-sh](https://github.com/kendraio/kendraio-gists/blob/main/culturebanked/gists/strip-control-chars.sh) - remove newlines etc.
+- [card-spaced.txt](https://github.com/kendraio/kendraio-gists/blob/main/culturebanked/gists/card-spaced.txt) - Card block as placed in app
 
 ### Misc
 
