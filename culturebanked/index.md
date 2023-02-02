@@ -1,13 +1,41 @@
 # CultureBanked/Kendraio
 
-_first impressions, 2023-01-31_
-
-## UI
+The exercise was to create a Kendraio App Workflow that captured the features of the mockup slide.
 
 - [Mockup Slide](https://docs.google.com/presentation/d/1Kfd87Zx0MFwDFSoW8Z209TBrgyM5WJWjHQfYXwcTOMU/edit#slide=id.g195879d82f4_0_1)
-- [App Version](https://app.kendra.io/culturebanked/culturebanked)
+- [Latest App Version](https://app.kendra.io/culturebanked/culturebanked)
 
-## Infrastructure Questions
+## Construction as Workflow
+
+The mockup slide has two parts : a form for submitting a request and a table for displaying the status. The current version of the app representation has the following Workflow Blocks:
+
+- Initialisation
+- Message - instructions for use
+- Form - selection of content hosts to send requests
+- Dialog - request confirmation
+- Message - divider line
+- Context and State (Save) - record the data
+- Mapping - reshape the data
+- Message - table title
+- Data grid - status table
+
+### Form
+
+The form part, has a clearly corresponding Workflow Block, Form.
+
+_There is the Form Builder section in the Kendraio App, but documentation seems to be lacking_
+
+On a first pass the form has been creating as a set of simple Label:Checkbox elements. It should be possible to make this resemble the slide version more closely using a JSON uiSchema, however the standard layouts (https://jsonforms.io/examples/layouts) don't really offer any improvement. _If the layout styling can be improved without under-the-hood changes to the app is an open question._
+
+### Status Table
+
+At least two different options are available for potential Workflow Blocks with which to display the status. Given that the slide has features that correspond directly to HTML elements (with dynamically loaded data), the first attempt at this used a Template Block. For convenience this was wrapped in a Card Block. This wasn't very successful as the app strips elements, so the checkboxes were lost (eg, <input type='checkbox' value='Apple' />).
+
+The current version uses a Data Grid block. This better fits the table layout of the slide version but lacks the checkbox-like elements. These are not included by default in the AG Grid component used by the app. However the use of checkboxes through modifying the underlying code is well-documented : https://blog.ag-grid.com/binding-boolean-values-to-checkboxes-in-ag-grid/
+
+## Open Issues for Potential Live Version
+
+### Infrastructure Questions
 
 local copy - is an online hosted copy desirable?
 
@@ -27,7 +55,7 @@ Post Office Protocol (POP), Internet Message Access Protocol (IMAP) - preferred 
 
 ### Potential flow
 
-Maybe use a single form for both
+Maybe use a single form for both tables in mockups
 
 on submit, run through each content host with a Switch block?
 
@@ -44,13 +72,21 @@ Falls out of the app UI
 - [strip-control-chars-sh](https://github.com/kendraio/kendraio-gists/blob/main/culturebanked/gists/strip-control-chars.sh) - remove newlines etc.
 - [card-spaced.txt](https://github.com/kendraio/kendraio-gists/blob/main/culturebanked/gists/card-spaced.txt) - Card block as placed in app
 
-### Misc
+### Glossary
 
-Form Builder?
+- CultureBanked
+- DST : Digital Services Tax
+- OECD : Organisation for Economic Co-operation and Development https://en.wikipedia.org/wiki/OECD
+
+--- TO MOVE ---
+
+## App Issues
+
+Form Builder - docs?
 
 ---
 
-not apparent how to create a new Workflow...
+not apparent how to create a new Workflow (I renamed/saved an existing one)
 
 Upload - save as new - http failure 500 OK
 
@@ -62,10 +98,10 @@ Putting form into Template block - styling is lost - sanitising?
 
 JSON in blocks doesn't like newlines - hence strip
 
-<input type='checkbox' value='Apple' /> - is lost
+- is lost
 
-### Glossary
+JMESPath is hard! The docs aren't great, a lot of trial & error needed.
 
-- CultureBanked
-- DST : Digital Services Tax
-- OECD : Organisation for Economic Co-operation and Development https://en.wikipedia.org/wiki/OECD
+Mapping :
+
+[context.[`Apple`,*.Apple],context.[`Google`,*.Google],context.[`Amazon`,*.Amazon],context.[`Meta`,*.Meta],context.[`YouTube`,*.YouTube]]
