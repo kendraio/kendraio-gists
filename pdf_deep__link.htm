@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PDF.js with text deep linking</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.7.570/pdf.min.js"></script>
+    <style>
+        #pdfContainer {
+            width: 100%;
+            height: 100vh;
+            overflow: auto;
+            position: relative;
+            cursor: grab;
+        }
+        .pdfPage {
+            width: 100%;
+            position: relative;
+        }
+        #loadingIndicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingIndicator">Loading PDF...</div>
+    <div id="pdfContainer"></div>
+            <script>
+        const params = new URLSearchParams(window.location.search);
+        const url = params.get('site');
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const hash = window.location.hash;
+        const searchString = decodeURIComponent(hash.replace('#:~:text=', '').replace(/\s+/g, ' ').trim());
+        const searchRegex = new RegExp(searchString.replace(/\s+/g, '\\s*'), 'i');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const pdfContainer = document.getElementById('pdfContainer');
+        const pages = [];  // Initialise pages array
+
+        console.log(`Fetching PDF from: ${proxyUrl}`);
+        fetch(proxyUrl)
+            .then(response => {
+                console.log('Received response from proxy');
+                loadingIndicator.textContent = 'Received response from proxy';
+                return response.json();
+            })
+            .then(data => {
+                console.log('Parsing response data');
+                // Strips the data URL prefix:
+                const base64Data = data.contents.replace(/^data:application\/pdf;base64,/, '');
+                console.log('Base64 data length:', base64Data.length);
+                const binaryString = atob(base64Data);
+                const len = binaryString.length;
+                console.log('Binary string length:', len);
+                const pdfData = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    pdfData[i] = binaryString.charCodeAt(i);
+                }
+                console.log('PDF data created, length:', pdfData.length);
+                return pdfjsLib.getDocument({data: pdfData}).promise;
+            })
+            .then(pdf => {
+                console.log('PDF loaded');
+                const numPages = pdf.numPages;
+                console.log('Number of pages:', numPages);
+                let totalCharacters = 0;
+                let totalWords = 0;
+                let targetPageNum = null;
+                let targetViewport = null;
+                let targetTx = null;
+
+                const findTextInPage = (page, pageNum) => {
+                    return page.getTextContent().then(textContent => {
+                        // Normalises text by removing excessive spaces:
+                        const text = textContent.items.map(item => item.str).join(' ').replace(/\s+/g, ' ').trim();
+                        totalCharacters += text.length;
+                        totalWords += text.split(/\s+/).length;
+
+                        if (searchRegex.test(text)) {
+                            console.log(`Found "${searchString}" on page ${pageNum}`);
+                            targetPageNum = pageNum;
+                            const viewport = page.getViewport({scale: 1.5});
+                            targetViewport = viewport;
+                            textContent.items.forEach(item => {
+                                const normalisedItemStr = item.str.replace(/\s+/g, ' ').trim();
+                                if (searchRegex.test(normalisedItemStr)) {
+                                    const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                                    targetTx = tx;
+                                }
+                            });
+                        }
+                    });
+                };
+
+                const renderPage = pageNum => {
+                    return pdf.getPage(pageNum).then(page => {
+                        console.log(`Rendering page ${pageNum}`);
+                        const viewport = page.getViewport({scale: 1.5});
+                        const pageDiv = document.getElementById(`page-${pageNum}`);
+                        const canvas = document.createElement('canvas');
+                        canvas.className = 'pdfViewer';
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        pageDiv.appendChild(canvas);
+
+                        return page.render({canvasContext: context, viewport: viewport}).promise.then(() => {
+                            if (pageNum === targetPageNum) {
+                                page.getTextContent().then(textContent => {
+                                    textContent.items.forEach(item => {
+                                        const normalisedItemStr = item.str.replace(/\s+/g, ' ').trim();
+                                        if (searchRegex.test(normalisedItemStr)) {
+                                            const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                                            context.save();
+                                            context.globalAlpha = 0.5;
+                                            context.fillStyle = 'yellow';
+                                            context.fillRect(tx[4], tx[5] - item.height, item.width, item.height);
+                                            context.restore();
+                                        }
+                                    });
+                                    // Scroll to the highlighted text
+                                    pdfContainer.scrollTop = pageDiv.offsetTop + targetTx[5] - pdfContainer.clientHeight / 2;
+                                    pdfContainer.scrollLeft = targetTx[4] - pdfContainer.clientWidth / 2 + targetViewport.width / 2;
+                                });
+                            }
+                        });
+                    });
+                };
+
+                const handleScroll = () => {
+                    const containerTop = pdfContainer.scrollTop;
+                    const containerBottom = containerTop + pdfContainer.clientHeight;
+
+                    pages.forEach(pageDiv => {
+                        const pageTop = pageDiv.offsetTop;
+                        const pageBottom = pageTop + pageDiv.clientHeight;
+
+                        if ((pageTop >= containerTop && pageTop < containerBottom) || (pageBottom > containerTop && pageBottom <= containerBottom)) {
+                            const pageNum = parseInt(pageDiv.dataset.pageNumber);
+                            if (!pageDiv.hasChildNodes()) {
+                                renderPage(pageNum);
+                            }
+                        }
+                    });
+                };
+
+                const searchPages = async () => {
+                    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                        const page = await pdf.getPage(pageNum);
+                        await findTextInPage(page, pageNum);
+                        const pageDiv = document.createElement('div');
+                        pageDiv.className = 'pdfPage';
+                        pageDiv.id = `page-${pageNum}`;
+                        pageDiv.dataset.pageNumber = pageNum;
+                        pageDiv.style.height = `${page.getViewport({scale: 1.5}).height}px`; // Use actual page height
+                        pdfContainer.appendChild(pageDiv);
+                        pages.push(pageDiv);  // Add to pages array
+                    }
+                    loadingIndicator.style.display = 'none';
+                    handleScroll(); // Initial call to load visible pages
+
+                    // Log total characters and word counts after all pages are processed
+                    console.log(`Total characters: ${totalCharacters}`);
+                    console.log(`Estimated word count: ${totalWords}`);
+                    console.log(`Average words per page: ${(totalWords / numPages).toFixed(2)}`);
+
+                    if (targetPageNum !== null) {
+                        // Ensure target page is rendered
+                        await renderPage(targetPageNum);
+                    }
+                };
+
+                pdfContainer.addEventListener('scroll', handleScroll);
+                searchPages();
+
+                // Enable usual PDF interactions after highlighting
+                let isDragging = false;
+                let startX, startY, scrollLeft, scrollTop;
+
+                pdfContainer.addEventListener('mousedown', e => {
+                    isDragging = true;
+                    startX = e.pageX - pdfContainer.offsetLeft;
+                    startY = e.pageY - pdfContainer.offsetTop;
+                    scrollLeft = pdfContainer.scrollLeft;
+                    scrollTop = pdfContainer.scrollTop;
+                    pdfContainer.style.cursor = 'grabbing';
+                });
+
+                pdfContainer.addEventListener('mouseleave', () => {
+                    isDragging = false;
+                    pdfContainer.style.cursor = 'grab';
+                });
+
+                pdfContainer.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    pdfContainer.style.cursor = 'grab';
+                });
+
+                pdfContainer.addEventListener('mousemove', e => {
+                    if (!isDragging) return;
+                    e.preventDefault();
+                    const x = e.pageX - pdfContainer.offsetLeft;
+                    const y = e.pageY - pdfContainer.offsetTop;
+                    const walkX = (x - startX);
+                    const walkY = (y - startY);
+                    pdfContainer.scrollLeft = scrollLeft - walkX;
+                    pdfContainer.scrollTop = scrollTop - walkY;
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingIndicator.textContent = 'Error loading PDF.';
+            });
+    </script>
+</body>
+</html>
