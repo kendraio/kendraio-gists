@@ -35,7 +35,10 @@
         const params = new URLSearchParams(window.location.search);
         const url = params.get('site');
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        const searchString = params.get('search') ? decodeURIComponent(params.get('search')).replace(/\s+/g, ' ').trim() : '';
+        const searchParam = params.get('search');
+        const hash = window.location.hash;
+        const searchString = searchParam ? decodeURIComponent(searchParam) : 
+                             hash ? decodeURIComponent(hash.replace('#:~:text=', '')) : '';
         const searchRegex = new RegExp(searchString.replace(/\s+/g, '\\s*'), 'i');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const pdfContainer = document.getElementById('pdfContainer');
@@ -81,7 +84,7 @@
                         totalCharacters += text.length;
                         totalWords += text.split(/\s+/).length;
 
-                        if (searchString && searchRegex.test(text)) {
+                        if (searchRegex.test(text)) {
                             console.log(`Found "${searchString}" on page ${pageNum}`);
                             targetPageNum = pageNum;
                             const viewport = page.getViewport({scale: 1.5});
