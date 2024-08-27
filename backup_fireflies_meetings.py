@@ -221,10 +221,12 @@ def get_meeting_transcript(meeting_note_id):
 
     captions = data["data"]["meetingNote"]["captions"]
     speakers = data["data"]["meetingNote"]["speakerMeta"]
+    #The speaker ID is 0 based in captions, but 1 based in speakerMeta!
 
     transcript_list = []
     for caption in captions:
-        speaker_name = speakers.get(str(caption["speaker_id"]), "Unknown Speaker")
+        adjusted_speaker_id = caption["speaker_id"] + 1  # Fixed to ensure speaker IDs are not off by 1! 
+        speaker_name = speakers.get(str(adjusted_speaker_id), "Unknown Speaker")
         time = caption["time"]
         sentence = caption["sentence"]
         transcript_list.append(f'{time}: {speaker_name} said: "{sentence}"')
