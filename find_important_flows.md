@@ -23,10 +23,12 @@ mv flows flows.txt
 ```
 Based on the provided documents, identify important Kendraio Pilots. Then, list up to 30 key Kendraio App Flows that use the HTTP block, split into two categories: 'Flows needing login or API keys' and 'Flows that do not need login'.
 
-For each flow, group by adapter and provide the flow name, a description, and a direct link formatted as https://app.kendra.io/{adapterName}/{flowID}. Ensure all headings and labels are in sentence case.
+For each flow, group by adapter and provide the flow name, a description, and a direct link formatted as https://app.kendra.io/{adapterName}/{flowID}.
 ```
 
-### Important Kendraio pilots
+**This *should* result in output like below:**
+
+## Kendraio Pilots
 
 These pilots are considered important based on their strategic value, such as having high user reach, direct collaborator involvement, potential funding, or demonstrating core Kendraio features.
 
@@ -37,7 +39,6 @@ These pilots are considered important based on their strategic value, such as ha
 5.  **Stepping Stones Approach**: While niche, this pilot is important for its unique and high-impact use case in nuclear disarmament diplomacy. It showcases Kendraio's flexibility in handling complex document analysis and creating knowledge graphs for specialized fields.
 6.  **Kendraio Task**: An essential internal pilot that demonstrates one of Kendraio's core strengths: aggregating data from multiple, disparate sources (Linear, GitHub, Google Drive) into a single, manageable dashboard.
 7.  **CultureBanked Artist & GDT**: A long-standing collaboration that is crucial for demonstrating Kendraio's integration with Google Sheets as a database and its capacity to build bespoke tools for niche communities like visual artists. The GDT part explores innovative, forward-thinking concepts like digital taxation.
-8.  **Kendraio Player & Distributor**: This pilot is important as it showcases Kendraio's capabilities in the Web Monetization space, involving integrations with services like Coil and Uphold. It demonstrates a practical application for micropayments and direct-to-artist payments.
 
 ---
 
