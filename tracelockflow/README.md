@@ -21,5 +21,7 @@ In another terminal run this after:
 # Run the OpenAPI server for the Flow to use:
 MCPO_LOG_LEVEL=DEBUG uvx mcpo --port 8044 --server-type streamable-http  --cors-allow-origins="*" -- https://mcp.deepwiki.com/mcp
 ```
+
+Add MCP intercept proxy to VS Code Copilot: http://localhost:8084/sse
 The static workflow with no LLM magic (when used):
 Open up https://app.kendra.io/mcpProxy/deepWiki
