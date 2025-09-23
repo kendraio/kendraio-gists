@@ -18,5 +18,8 @@ uv run proxy.sh
 
 In another terminal run this after:
 ```bash
+# Run the OpenAPI server for the Flow to use:
 MCPO_LOG_LEVEL=DEBUG uvx mcpo --port 8000 --server-type streamable-http  --cors-allow-origins="*" -- https://mcp.deepwiki.com/mcp
 ```
+
+Open up https://app.kendra.io/mcpProxy/deepWiki
