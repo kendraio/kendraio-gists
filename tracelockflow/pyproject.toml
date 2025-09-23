@@ -1,0 +1,9 @@
+[project]
+name = "tracelockflow"
+version = "0.1.0"
+description = "Learning static flows from unreliable LLM based agents"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mcpo>=0.0.17",
+]
