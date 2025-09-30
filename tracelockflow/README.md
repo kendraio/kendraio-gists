@@ -13,7 +13,7 @@ cd kendraio-gists/tracelockflow
 # Install Astral UV
 curl -LsSf https://astral.sh/uv/install.sh | sh
 # Run the intercept proxy in one terminal:
-uv run proxy.sh
+uv run proxy.py
 ```
 
 In another terminal run this after:
