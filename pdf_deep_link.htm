@@ -33,8 +33,16 @@
     <div id="pdfContainer"></div>
             <script>
         const params = new URLSearchParams(window.location.search);
-        const url = params.get('site');
-        const proxyUrl = `https://proxy.kendra.io/proxy/${encodeURIComponent(url)}`;
+        const rawQuery = window.location.search.startsWith('?') ? window.location.search.slice(1) : '';
+        const siteStart = rawQuery.indexOf('site=');
+        let url = params.get('site');
+        if (siteStart !== -1) {
+            const valueStart = siteStart + 'site='.length;
+            const searchStart = rawQuery.indexOf('&search=', valueStart);
+            const valueEnd = searchStart === -1 ? rawQuery.length : searchStart;
+            url = decodeURIComponent(rawQuery.slice(valueStart, valueEnd).replace(/\+/g, ' '));
+        }
+        const proxyUrl = `https://proxy.kendra.io/proxy/${url}`;
         const searchParam = params.get('search');
         const hash = window.location.hash;
         const searchString = searchParam ? decodeURIComponent(searchParam) : 
@@ -50,20 +58,11 @@
             .then(response => {
                 console.log('Received response from proxy');
                 loadingIndicator.textContent = 'Received response from proxy';
-                return response.json();
+                return response.arrayBuffer();
             })
-            .then(data => {
-                console.log('Parsing response data');
-                // Strips the data URL prefix:
-                const base64Data = data.contents.replace(/^data:application\/pdf;base64,/, '');
-                console.log('Base64 data length:', base64Data.length);
-                const binaryString = atob(base64Data);
-                const len = binaryString.length;
-                console.log('Binary string length:', len);
-                const pdfData = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    pdfData[i] = binaryString.charCodeAt(i);
-                }
+            .then(buffer => {
+                console.log('Parsing response bytes');
+                const pdfData = new Uint8Array(buffer);
                 console.log('PDF data created, length:', pdfData.length);
                 return pdfjsLib.getDocument({data: pdfData}).promise;
             })
