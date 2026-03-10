@@ -34,7 +34,7 @@
             <script>
         const params = new URLSearchParams(window.location.search);
         const url = params.get('site');
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const proxyUrl = `https://proxy.kendra.io/proxy/${encodeURIComponent(url)}`;
         const searchParam = params.get('search');
         const hash = window.location.hash;
         const searchString = searchParam ? decodeURIComponent(searchParam) : 
